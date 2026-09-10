@@ -30,9 +30,10 @@ export function levelProgressRatio(progress, topicConfig, themeConfig) {
   return into / topicConfig.pointsPerLevel;
 }
 
-export function getNextQuestion(provider, progress, topicConfig) {
+export function getNextQuestion(provider, progress, topicConfig, subtopicId) {
   const tier = difficultyTierIndex(progress, topicConfig);
-  return provider.getNextQuestion(tier, progress.recentQuestionIds || []);
+  const subtopic = subtopicId ? (topicConfig.subtopics || []).find((s) => s.id === subtopicId) : null;
+  return provider.getNextQuestion(tier, progress.recentQuestionIds || [], subtopic);
 }
 
 function normalizeText(str) {

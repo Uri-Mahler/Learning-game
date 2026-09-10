@@ -158,7 +158,8 @@ function makeTwoStepWordProblem(maxFactor) {
   };
 }
 
-function pickKind(tier) {
+function pickKind(tier, subtopic) {
+  if (subtopic && subtopic.kinds) return pick(subtopic.kinds);
   const kinds = ['mult'];
   if (tier.includeDivision) kinds.push('div');
   if (tier.includeRemainder) kinds.push('divRemainder');
@@ -172,9 +173,9 @@ function pickKind(tier) {
 export function createProvider(topicConfig) {
   const tiers = topicConfig.levels;
 
-  function buildQuestion(tierIndex) {
+  function buildQuestion(tierIndex, subtopic) {
     const tier = tiers[Math.min(tierIndex, tiers.length - 1)];
-    const kind = pickKind(tier);
+    const kind = pickKind(tier, subtopic);
     switch (kind) {
       case 'div':
         return makeFactDivision(tier.maxFactor);
@@ -194,11 +195,11 @@ export function createProvider(topicConfig) {
     }
   }
 
-  function getNextQuestion(tierIndex, recentPrompts = []) {
+  function getNextQuestion(tierIndex, recentPrompts = [], subtopic = null) {
     let question;
     let attempts = 0;
     do {
-      question = buildQuestion(tierIndex);
+      question = buildQuestion(tierIndex, subtopic);
       attempts++;
     } while (recentPrompts.includes(question.prompt) && attempts < 6);
     return { id: question.prompt, ...question };

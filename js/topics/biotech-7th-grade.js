@@ -50,8 +50,10 @@ export function createProvider(topicConfig) {
     };
   }
 
-  function getNextQuestion(tierIndex, recentIds = []) {
-    const pool = bank.filter((q) => q.tier <= tierIndex);
+  function getNextQuestion(tierIndex, recentIds = [], subtopic = null) {
+    const pool = subtopic && subtopic.tiers
+      ? bank.filter((q) => subtopic.tiers.includes(q.tier))
+      : bank.filter((q) => q.tier <= tierIndex);
     const fresh = pool.filter((q) => !recentIds.includes(q.id));
     const candidates = fresh.length > 0 ? fresh : pool;
     const entry = candidates[randInt(0, candidates.length - 1)];

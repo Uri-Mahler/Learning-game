@@ -7,6 +7,13 @@
   "providerModule": "multiplication-4th-grade.js",
   "pointsPerLevel": 80,
   "tierCount": 6,
+  "subtopics": [
+    { "id": "facts", "name": "עובדות כפל", "icon": "✖️", "kinds": ["mult"] },
+    { "id": "division", "name": "חילוק", "icon": "➗", "kinds": ["div", "divRemainder"] },
+    { "id": "comparative", "name": "בעיות \"פי כמה\"", "icon": "🔁", "kinds": ["comparative"] },
+    { "id": "word-problems", "name": "בעיות מילוליות", "icon": "📝", "kinds": ["wordProblem", "twoStep"] },
+    { "id": "powers-of-ten", "name": "כפל ב-10, 100, 1000", "icon": "🔢", "kinds": ["multTen"] }
+  ],
   "levels": [
     {
       "maxFactor": 5,

@@ -286,6 +286,12 @@ h1, h2, h3, p { margin: 0; }
   font-size: .85rem;
   font-weight: 800;
 }
+.subtopic-badge {
+  align-self: flex-start;
+}
+.feedback-area:empty {
+  display: none;
+}
 
 /* ===== Drag-and-drop: single-answer drag tiles ===== */
 .drop-slot {

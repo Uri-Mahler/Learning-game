@@ -1,22 +1,26 @@
 import { h, mount, applyThemeColors, makeDraggable } from './components.js';
 import * as state from '../state.js';
 import { loadQuestBundle } from '../config-loader.js';
-import { getNextQuestion, applyAnswer, displayLevelIndex, levelProgressRatio } from '../game-engine.js';
+import { getNextQuestion, applyAnswer, checkAnswer, displayLevelIndex, levelProgressRatio } from '../game-engine.js';
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export async function renderGameScreen(root, { player, quest, onExit }) {
+export async function renderGameScreen(root, { player, quest, subtopicId, onExit }) {
   const screen = h('div', { class: 'screen' }, [h('div', { class: 'empty-state' }, 'טוען משימה...')]);
   mount(root, screen);
 
   const { topicConfig, themeConfig, provider } = await loadQuestBundle(quest);
   applyThemeColors(themeConfig);
 
+  const subtopic = subtopicId ? (topicConfig.subtopics || []).find((s) => s.id === subtopicId) : null;
+
   let progress = state.getProgress(player.id, quest.id);
   let currentQuestion = null;
   let answered = false;
+  let retryUsed = false;
+  let feedbackArea = null;
 
   const vocab = themeConfig.vocabulary;
 
@@ -32,7 +36,9 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
     h('button', { class: 'icon-btn', type: 'button', title: vocab.menu, onclick: onExit }, '🏠'),
   ]);
 
-  const layout = h('div', { class: 'screen' }, [topBar, hud, progressTrack, questionArea]);
+  const subtopicBadge = h('div', { class: 'streak-badge subtopic-badge' }, subtopic ? `${subtopic.icon || ''} ${subtopic.name}` : '🎲 תרגול מעורב');
+
+  const layout = h('div', { class: 'screen' }, [topBar, subtopicBadge, hud, progressTrack, questionArea]);
   mount(root, layout);
 
   function updateHud() {
@@ -59,7 +65,8 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
 
   function renderQuestion() {
     answered = false;
-    currentQuestion = getNextQuestion(provider, progress, topicConfig);
+    retryUsed = false;
+    currentQuestion = getNextQuestion(provider, progress, topicConfig, subtopicId);
     questionArea.innerHTML = '';
     questionArea.appendChild(
       h('div', { class: 'question-card__prompt', dir: currentQuestion.dir || null }, currentQuestion.prompt)
@@ -68,6 +75,9 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
     if (currentQuestion.type === 'multiple-choice') renderDragChoice(currentQuestion);
     else if (currentQuestion.type === 'match-pairs') renderMatchPairs(currentQuestion);
     else renderFillIn(currentQuestion);
+
+    feedbackArea = h('div', { class: 'feedback-area' });
+    questionArea.appendChild(feedbackArea);
   }
 
   function renderDragChoice(question) {
@@ -122,7 +132,7 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
       termEls[termId].classList.add('placed');
       clearSelection();
       if (Object.keys(placements).length === question.pairs.length) {
-        finishMatchPairs(question, placements, slotEls, termEls);
+        checkMatchPairs(question, placements, slotEls, termEls);
       }
     }
 
@@ -159,10 +169,34 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
     questionArea.appendChild(bank);
   }
 
+  function showHint() {
+    feedbackArea.innerHTML = '';
+    feedbackArea.appendChild(
+      h('div', { class: 'feedback feedback--wrong' }, [
+        'כמעט! נסו שוב',
+        currentQuestion.explanation ? h('span', { class: 'feedback__explain' }, currentQuestion.explanation) : null,
+      ])
+    );
+  }
+
   function handleAnswer(userInput, elements) {
     if (answered) return;
-    answered = true;
+    const correct = checkAnswer(currentQuestion, userInput);
 
+    if (!correct && !retryUsed) {
+      retryUsed = true;
+      if (elements.type === 'drag') {
+        elements.tileEl.classList.add('wrong', 'disabled');
+        elements.slotEl.textContent = 'גררו את התשובה לכאן';
+      } else {
+        elements.input.value = '';
+        elements.input.focus();
+      }
+      showHint();
+      return;
+    }
+
+    answered = true;
     const result = applyAnswer(progress, topicConfig, themeConfig, currentQuestion, userInput);
     progress = result.progress;
     state.saveProgress(player.id, quest.id, progress);
@@ -185,7 +219,24 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
     appendFeedbackAndContinue(result);
   }
 
-  function finishMatchPairs(question, placements, slotEls, termEls) {
+  function checkMatchPairs(question, placements, slotEls, termEls) {
+    const allCorrect = question.pairs.every((pair) => placements[pair.id] === pair.id);
+
+    if (!allCorrect && !retryUsed) {
+      retryUsed = true;
+      question.pairs.forEach((pair) => {
+        if (placements[pair.id] !== pair.id) {
+          const wrongTermId = placements[pair.id];
+          delete placements[pair.id];
+          slotEls[pair.id].textContent = 'גררו מונח לכאן';
+          slotEls[pair.id].classList.remove('filled');
+          termEls[wrongTermId].classList.remove('placed');
+        }
+      });
+      showHint();
+      return;
+    }
+
     answered = true;
     const result = applyAnswer(progress, topicConfig, themeConfig, question, placements);
     progress = result.progress;
@@ -206,6 +257,7 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
   }
 
   function appendFeedbackAndContinue(result) {
+    feedbackArea.innerHTML = '';
     const feedback = h('div', { class: `feedback feedback--${result.correct ? 'correct' : 'wrong'}` }, [
       result.correct ? pick(vocab.correct) : pick(vocab.wrong),
       !result.correct && currentQuestion.type === 'fill-in' ? h('span', { class: 'reveal-answer' }, `התשובה הנכונה: ${revealFillInAnswer(currentQuestion)}`) : null,
@@ -225,8 +277,8 @@ export async function renderGameScreen(root, { player, quest, onExit }) {
       vocab.continueBtn
     );
 
-    questionArea.appendChild(feedback);
-    questionArea.appendChild(continueBtn);
+    feedbackArea.appendChild(feedback);
+    feedbackArea.appendChild(continueBtn);
   }
 
   function revealFillInAnswer(question) {
