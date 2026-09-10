@@ -3,6 +3,7 @@ import { renderPlayerSelectScreen } from './ui/player-select-screen.js';
 import { renderQuestMenuScreen } from './ui/quest-menu-screen.js';
 import { renderSubtopicSelectScreen } from './ui/subtopic-select-screen.js';
 import { renderGameScreen } from './ui/game-screen.js';
+import { renderBossBattleScreen } from './ui/boss-battle-screen.js';
 
 const root = document.getElementById('app');
 
@@ -36,12 +37,17 @@ function showSubtopicSelect(player, quest) {
     player,
     quest,
     onSubtopicChosen: (subtopicId) => showGame(player, quest, subtopicId),
+    onBossBattle: () => showBossBattle(player, quest),
     onBack: showQuestMenu,
   });
 }
 
 function showGame(player, quest, subtopicId) {
   renderGameScreen(root, { player, quest, subtopicId, onExit: () => showSubtopicSelect(player, quest) });
+}
+
+function showBossBattle(player, quest) {
+  renderBossBattleScreen(root, { player, quest, onExit: () => showSubtopicSelect(player, quest) });
 }
 
 const activePlayer = state.getActivePlayer();

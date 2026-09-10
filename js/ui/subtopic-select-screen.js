@@ -2,7 +2,7 @@ import { h, mount, applyThemeColors } from './components.js';
 import { loadTopicConfig, loadThemeConfig } from '../config-loader.js';
 import * as state from '../state.js';
 
-export async function renderSubtopicSelectScreen(root, { player, quest, onSubtopicChosen, onBack }) {
+export async function renderSubtopicSelectScreen(root, { player, quest, onSubtopicChosen, onBossBattle, onBack }) {
   const screen = h('div', { class: 'screen' }, [h('div', { class: 'empty-state' }, 'טוען...')]);
   mount(root, screen);
 
@@ -21,6 +21,18 @@ export async function renderSubtopicSelectScreen(root, { player, quest, onSubtop
       h('div', { class: 'card__meta' }, 'קצת מהכול'),
     ]
   );
+
+  const bossCard = themeConfig.boss
+    ? h(
+        'div',
+        { class: 'card card--selectable card--boss', onclick: onBossBattle },
+        [
+          h('div', { class: 'card__emoji' }, themeConfig.boss.emoji),
+          h('div', { class: 'card__title' }, `קרב בוס: ${themeConfig.boss.name}`),
+          h('div', { class: 'card__meta' }, themeConfig.boss.tagline),
+        ]
+      )
+    : null;
 
   const subtopicCards = (topicConfig.subtopics || []).map((s) => {
     const prog = state.getSubtopicProgress(player.id, quest.id, s.id);
@@ -52,7 +64,7 @@ export async function renderSubtopicSelectScreen(root, { player, quest, onSubtop
     ]),
     h('h1', { class: 'title' }, 'מה נתרגל היום?'),
     h('p', { class: 'subtitle' }, quest.name),
-    h('div', { class: 'grid' }, [mixedCard, ...subtopicCards]),
+    h('div', { class: 'grid' }, [mixedCard, bossCard, ...subtopicCards]),
   ]);
   mount(root, layout);
 }
