@@ -47,6 +47,15 @@ export function checkAnswer(question, userInput) {
   if (question.type === 'match-pairs') {
     return question.pairs.every((pair) => userInput && userInput[pair.id] === pair.id);
   }
+  if (question.type === 'array-builder') {
+    return !!userInput && userInput.rows === question.targetRows && userInput.cols === question.targetCols;
+  }
+  if (question.type === 'fair-share') {
+    return Array.isArray(userInput) && userInput.length === question.divisor && userInput.every((count) => count === question.answer);
+  }
+  if (question.type === 'fraction-build' || question.type === 'fraction-equivalent' || question.type === 'fraction-multiply') {
+    return userInput === question.answer;
+  }
   if (question.acceptedAnswers) {
     const normalizedInput = normalizeText(userInput);
     return question.acceptedAnswers.some((a) => normalizeText(a) === normalizedInput);

@@ -158,15 +158,96 @@ function makeTwoStepWordProblem(maxFactor) {
   };
 }
 
+function makeArrayBuilder(maxFactor) {
+  const cap = Math.min(maxFactor, 10);
+  const rows = randInt(2, cap);
+  const cols = randInt(2, cap);
+  return {
+    type: 'array-builder',
+    dir: 'ltr',
+    prompt: `בנו מערך עם ${rows} שורות ו-${cols} טורים - כמה ריבועים בסך הכול?`,
+    targetRows: rows,
+    targetCols: cols,
+    maxSlider: cap,
+    answer: rows * cols,
+    explanation: HINTS.mult,
+  };
+}
+
+function makeFairShare(maxFactor) {
+  const divisor = randInt(2, Math.min(4, maxFactor));
+  const quotient = randInt(2, Math.min(6, maxFactor));
+  const dividend = divisor * quotient;
+  return {
+    type: 'fair-share',
+    dir: 'ltr',
+    prompt: `${dividend} : ${divisor} = ? גררו את כל הפריטים לקבוצות, כך שבכל קבוצה יהיה מספר שווה`,
+    dividend,
+    divisor,
+    answer: quotient,
+    explanation: HINTS.div,
+  };
+}
+
+function makeFractionBuild() {
+  const denominator = randInt(3, 8);
+  const numerator = randInt(1, denominator - 1);
+  return {
+    type: 'fraction-build',
+    dir: 'ltr',
+    prompt: `צבעו ${numerator}/${denominator} מהצורה`,
+    denominator,
+    answer: numerator,
+    explanation: 'רמז: לחצו על משבצות עד שתצבעו בדיוק את החלק המבוקש.',
+  };
+}
+
+function makeFractionEquivalent() {
+  const baseDenominator = pick([2, 3, 4]);
+  const baseNumerator = randInt(1, baseDenominator - 1);
+  const multiplier = pick([2, 3]);
+  const targetDenominator = baseDenominator * multiplier;
+  const targetNumerator = baseNumerator * multiplier;
+  return {
+    type: 'fraction-equivalent',
+    dir: 'ltr',
+    prompt: `בצורה הראשונה צבוע ${baseNumerator}/${baseDenominator}. צבעו את אותו חלק בצורה השנייה, שמחולקת ל-${targetDenominator} חלקים`,
+    baseNumerator,
+    baseDenominator,
+    targetDenominator,
+    answer: targetNumerator,
+    explanation: `רמז: ${baseNumerator}/${baseDenominator} שווה ל-${targetNumerator}/${targetDenominator} - הכפילו את המונה ואת המכנה פי ${multiplier}.`,
+  };
+}
+
+function makeFractionMultiply() {
+  const rows = pick([2, 3, 4]);
+  const shadedRows = randInt(1, rows - 1);
+  const cols = pick([2, 3, 4]);
+  const answerCols = randInt(1, cols - 1);
+  return {
+    type: 'fraction-multiply',
+    dir: 'ltr',
+    prompt: `כמה זה ${shadedRows}/${rows} × ${answerCols}/${cols}? לחצו על טורים כדי לצבוע ${answerCols} מתוך ${cols} - החלק הכהה המשותף הוא התשובה`,
+    rows,
+    cols,
+    shadedRows,
+    answerCols,
+    answer: shadedRows * answerCols,
+    explanation: `רמז: ${shadedRows}/${rows} × ${answerCols}/${cols} = ${shadedRows * answerCols}/${rows * cols} - כפל שברים הוא "חלק מתוך חלק".`,
+  };
+}
+
 function pickKind(tier, subtopic) {
   if (subtopic && subtopic.kinds) return pick(subtopic.kinds);
-  const kinds = ['mult'];
-  if (tier.includeDivision) kinds.push('div');
+  const kinds = ['mult', 'arrayBuilder'];
+  if (tier.includeDivision) kinds.push('div', 'fairShare');
   if (tier.includeRemainder) kinds.push('divRemainder');
   if (tier.includeMultiples10) kinds.push('multTen');
   if (tier.includeComparative) kinds.push('comparative');
   if (tier.includeWordProblems) kinds.push('wordProblem');
   if (tier.includeTwoStep) kinds.push('twoStep');
+  if (tier.includeFractions) kinds.push('fractionBuild', 'fractionEquivalent', 'fractionMultiply');
   return pick(kinds);
 }
 
@@ -189,6 +270,16 @@ export function createProvider(topicConfig) {
         return makeWordProblem(tier.maxFactor);
       case 'twoStep':
         return makeTwoStepWordProblem(tier.maxFactor);
+      case 'arrayBuilder':
+        return makeArrayBuilder(tier.maxFactor);
+      case 'fairShare':
+        return makeFairShare(tier.maxFactor);
+      case 'fractionBuild':
+        return makeFractionBuild();
+      case 'fractionEquivalent':
+        return makeFractionEquivalent();
+      case 'fractionMultiply':
+        return makeFractionMultiply();
       case 'mult':
       default:
         return makeFactMultiplication(tier.maxFactor);

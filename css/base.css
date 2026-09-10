@@ -401,3 +401,159 @@ h1, h2, h3, p { margin: 0; }
   font-weight: 800;
   color: var(--color-primary);
 }
+
+/* ===== Array builder (multiplication as rows x columns) ===== */
+.array-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+.array-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+}
+.array-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+  font-size: .9rem;
+}
+.array-slider {
+  width: 100%;
+  accent-color: var(--color-primary);
+}
+.array-grid {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  max-width: 100%;
+}
+.array-cell {
+  width: 18px;
+  height: 18px;
+  background: var(--color-primary);
+  border-radius: 3px;
+}
+.array-total {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+/* ===== Fair-share buckets (division as equal grouping) ===== */
+.fairshare-buckets {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.fairshare-bucket {
+  min-width: 80px;
+  min-height: 100px;
+  border: 3px dashed var(--color-secondary);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 4px;
+  padding: 8px;
+  justify-content: center;
+  transition: border-color .15s ease;
+}
+.fairshare-bucket.drag-over { border-color: var(--color-accent); }
+.fairshare-bucket.correct { border-color: var(--color-success); border-style: solid; }
+.fairshare-bucket.wrong { border-color: var(--color-error); border-style: solid; }
+.fairshare-token {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.fairshare-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  padding-top: 10px;
+  border-top: 2px dashed var(--color-secondary);
+  min-height: 44px;
+  width: 100%;
+}
+
+/* ===== Fraction slice-shading shapes ===== */
+.fraction-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+.fraction-shape {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  width: 100%;
+  max-width: 320px;
+}
+.fraction-slice {
+  flex: 1;
+  height: 64px;
+  max-width: 56px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s ease;
+  touch-action: manipulation;
+}
+.fraction-slice.shaded { background: var(--color-primary); border-color: var(--color-primary); }
+.fraction-slice.locked { cursor: default; opacity: .85; }
+.fraction-label {
+  font-weight: 800;
+  font-size: 1.05rem;
+  text-align: center;
+}
+.fraction-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+/* ===== Fraction multiplication (part of a part) ===== */
+.fracmul-grid-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  width: 100%;
+  max-width: 260px;
+}
+.fracmul-grid {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+}
+.fracmul-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--color-surface);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.fracmul-cell.row-shaded { background: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface)); }
+.fracmul-cell.col-shaded { background: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface)); }
+.fracmul-cell.overlap { background: var(--color-primary); }

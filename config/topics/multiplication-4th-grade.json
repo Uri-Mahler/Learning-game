@@ -1,18 +1,19 @@
 {
   "id": "multiplication-4th-grade",
   "name": "כפל וחילוק - כיתה ד'",
-  "description": "תרגול כפל וחילוק, כולל בעיות מילוליות ובעיות \"פי כמה\", בהתאם להיקף הנושאים הנלמדים בספרי שבילים פלוס 8-10 לכיתה ד'.",
+  "description": "תרגול כפל, חילוק ומבוא לשברים - כולל בעיות מילוליות ובעיות \"פי כמה\" - בהתאם להיקף הנושאים הנלמדים בספרי שבילים פלוס 8-10 לכיתה ד'.",
   "grade": 4,
   "subject": "math",
   "providerModule": "multiplication-4th-grade.js",
   "pointsPerLevel": 80,
   "tierCount": 6,
   "subtopics": [
-    { "id": "facts", "name": "עובדות כפל", "icon": "✖️", "kinds": ["mult"] },
-    { "id": "division", "name": "חילוק", "icon": "➗", "kinds": ["div", "divRemainder"] },
+    { "id": "facts", "name": "עובדות כפל", "icon": "✖️", "kinds": ["mult", "arrayBuilder"] },
+    { "id": "division", "name": "חילוק", "icon": "➗", "kinds": ["div", "divRemainder", "fairShare"] },
     { "id": "comparative", "name": "בעיות \"פי כמה\"", "icon": "🔁", "kinds": ["comparative"] },
     { "id": "word-problems", "name": "בעיות מילוליות", "icon": "📝", "kinds": ["wordProblem", "twoStep"] },
-    { "id": "powers-of-ten", "name": "כפל ב-10, 100, 1000", "icon": "🔢", "kinds": ["multTen"] }
+    { "id": "powers-of-ten", "name": "כפל ב-10, 100, 1000", "icon": "🔢", "kinds": ["multTen"] },
+    { "id": "fractions", "name": "שברים", "icon": "🍕", "kinds": ["fractionBuild", "fractionEquivalent", "fractionMultiply"] }
   ],
   "levels": [
     {
@@ -22,7 +23,8 @@
       "includeWordProblems": false,
       "includeMultiples10": false,
       "includeTwoStep": false,
-      "includeRemainder": false
+      "includeRemainder": false,
+      "includeFractions": false
     },
     {
       "maxFactor": 10,
@@ -31,7 +33,8 @@
       "includeWordProblems": true,
       "includeMultiples10": false,
       "includeTwoStep": false,
-      "includeRemainder": false
+      "includeRemainder": false,
+      "includeFractions": false
     },
     {
       "maxFactor": 10,
@@ -40,7 +43,8 @@
       "includeWordProblems": true,
       "includeMultiples10": false,
       "includeTwoStep": true,
-      "includeRemainder": false
+      "includeRemainder": false,
+      "includeFractions": false
     },
     {
       "maxFactor": 12,
@@ -49,7 +53,8 @@
       "includeWordProblems": true,
       "includeMultiples10": true,
       "includeTwoStep": true,
-      "includeRemainder": true
+      "includeRemainder": true,
+      "includeFractions": true
     },
     {
       "maxFactor": 12,
@@ -58,7 +63,8 @@
       "includeWordProblems": true,
       "includeMultiples10": true,
       "includeTwoStep": true,
-      "includeRemainder": true
+      "includeRemainder": true,
+      "includeFractions": true
     },
     {
       "maxFactor": 15,
@@ -67,7 +73,8 @@
       "includeWordProblems": true,
       "includeMultiples10": true,
       "includeTwoStep": true,
-      "includeRemainder": true
+      "includeRemainder": true,
+      "includeFractions": true
     }
   ]
 }
