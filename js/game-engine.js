@@ -12,12 +12,20 @@ export function difficultyTierIndex(progress, topicConfig) {
   return Math.min(rawLevelIndex(progress, topicConfig), topicConfig.tierCount - 1);
 }
 
-export function displayLevelIndex(progress, topicConfig, themeConfig) {
-  const names = themeConfig.levelNames.length;
-  return Math.min(rawLevelIndex(progress, topicConfig), names - 1);
+// The highest level that actually means anything: once a player's rank name
+// and difficulty tier have both maxed out, there is no next chapter, so the
+// bar should stop resetting and just sit full instead of cycling forever.
+export function maxLevelIndex(topicConfig, themeConfig) {
+  return Math.min(topicConfig.tierCount, themeConfig.levelNames.length) - 1;
 }
 
-export function levelProgressRatio(progress, topicConfig) {
+export function displayLevelIndex(progress, topicConfig, themeConfig) {
+  return Math.min(rawLevelIndex(progress, topicConfig), maxLevelIndex(topicConfig, themeConfig));
+}
+
+export function levelProgressRatio(progress, topicConfig, themeConfig) {
+  const capped = maxLevelIndex(topicConfig, themeConfig);
+  if (rawLevelIndex(progress, topicConfig) >= capped) return 1;
   const into = progress.points % topicConfig.pointsPerLevel;
   return into / topicConfig.pointsPerLevel;
 }
@@ -35,6 +43,9 @@ export function checkAnswer(question, userInput) {
   if (question.type === 'multiple-choice') {
     return userInput === question.answer;
   }
+  if (question.type === 'match-pairs') {
+    return question.pairs.every((pair) => userInput && userInput[pair.id] === pair.id);
+  }
   if (question.acceptedAnswers) {
     const normalizedInput = normalizeText(userInput);
     return question.acceptedAnswers.some((a) => normalizeText(a) === normalizedInput);
@@ -42,9 +53,10 @@ export function checkAnswer(question, userInput) {
   return Number(userInput) === question.answer;
 }
 
-export function applyAnswer(progress, topicConfig, question, userInput) {
+export function applyAnswer(progress, topicConfig, themeConfig, question, userInput) {
   const correct = checkAnswer(question, userInput);
-  const prevLevel = rawLevelIndex(progress, topicConfig);
+  const capped = maxLevelIndex(topicConfig, themeConfig);
+  const prevLevel = Math.min(rawLevelIndex(progress, topicConfig), capped);
 
   const pointsAwarded = correct ? BASE_POINTS + Math.min(progress.streak, STREAK_BONUS_CAP) * 2 : 0;
 
@@ -61,7 +73,7 @@ export function applyAnswer(progress, topicConfig, question, userInput) {
     recentQuestionIds,
   };
 
-  const newLevel = rawLevelIndex(nextProgress, topicConfig);
+  const newLevel = Math.min(rawLevelIndex(nextProgress, topicConfig), capped);
   const leveledUp = correct && newLevel > prevLevel;
 
   return { correct, pointsAwarded, leveledUp, progress: nextProgress };

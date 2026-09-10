@@ -5,8 +5,8 @@
   "grade": 4,
   "subject": "math",
   "providerModule": "multiplication-4th-grade.js",
-  "pointsPerLevel": 100,
-  "tierCount": 5,
+  "pointsPerLevel": 80,
+  "tierCount": 6,
   "levels": [
     {
       "maxFactor": 5,
@@ -46,6 +46,15 @@
     },
     {
       "maxFactor": 12,
+      "includeDivision": true,
+      "includeComparative": true,
+      "includeWordProblems": true,
+      "includeMultiples10": true,
+      "includeTwoStep": true,
+      "includeRemainder": true
+    },
+    {
+      "maxFactor": 15,
       "includeDivision": true,
       "includeComparative": true,
       "includeWordProblems": true,

@@ -1,7 +1,7 @@
 import { h, mount, clearTheme } from './components.js';
 import * as state from '../state.js';
 import { loadQuests, loadTopicConfig, loadThemeConfig } from '../config-loader.js';
-import { rawLevelIndex } from '../game-engine.js';
+import { displayLevelIndex } from '../game-engine.js';
 
 export async function renderQuestMenuScreen(root, { player, onQuestChosen, onSwitchPlayer }) {
   clearTheme();
@@ -36,7 +36,7 @@ async function buildQuestCard(quest, player, onChoose) {
   ]);
   const progress = state.getProgress(player.id, quest.id);
   const played = progress.questionsAnswered > 0;
-  const levelIdx = Math.min(rawLevelIndex(progress, topicConfig), themeConfig.levelNames.length - 1);
+  const levelIdx = displayLevelIndex(progress, topicConfig, themeConfig);
   const levelName = themeConfig.levelNames[levelIdx];
 
   return h(

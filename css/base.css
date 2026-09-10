@@ -30,6 +30,8 @@ button { font-family: inherit; }
 h1, h2, h3, p { margin: 0; }
 
 .app {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -216,31 +218,9 @@ h1, h2, h3, p { margin: 0; }
   font-weight: 800;
   line-height: 1.4;
 }
-.choices-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+.question-card__prompt[dir="ltr"] {
+  unicode-bidi: isolate;
 }
-@media (max-width: 420px) {
-  .choices-grid { grid-template-columns: 1fr; }
-}
-.choice-btn {
-  background: var(--color-surface);
-  border: 3px solid transparent;
-  border-radius: var(--radius-md);
-  padding: 16px 10px;
-  font-size: 1.15rem;
-  font-weight: 700;
-  cursor: pointer;
-  min-height: 56px;
-  color: var(--color-text);
-}
-.choice-btn:active { transform: scale(.96); }
-.choice-btn.correct { border-color: var(--color-success); background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface)); }
-.choice-btn.wrong { border-color: var(--color-error); background: color-mix(in srgb, var(--color-error) 20%, var(--color-surface)); }
-.choice-btn.disabled { pointer-events: none; opacity: .65; }
-.choice-btn.disabled.correct, .choice-btn.disabled.wrong { opacity: 1; }
-
 .fill-row {
   display: flex;
   gap: 10px;
@@ -305,4 +285,113 @@ h1, h2, h3, p { margin: 0; }
   padding: 4px 10px;
   font-size: .85rem;
   font-weight: 800;
+}
+
+/* ===== Drag-and-drop: single-answer drag tiles ===== */
+.drop-slot {
+  min-height: 64px;
+  max-width: 240px;
+  margin: 0 auto;
+  border: 3px dashed var(--color-secondary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-secondary);
+  transition: border-color .15s ease, background .15s ease;
+}
+.drop-slot.drag-over { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 15%, transparent); }
+.drop-slot.filled { border-style: solid; color: var(--color-text); }
+.drop-slot.correct { border-color: var(--color-success); background: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); }
+.drop-slot.wrong { border-color: var(--color-error); background: color-mix(in srgb, var(--color-error) 12%, transparent); color: var(--color-error); }
+
+.drag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.drag-tile {
+  background: var(--color-surface);
+  border: 3px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
+}
+.drag-tile.selected { outline: 3px solid var(--color-accent); }
+.drag-tile.placed { visibility: hidden; }
+.drag-tile.dragging { opacity: .35; }
+.drag-tile.correct { border-color: var(--color-success); background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface)); }
+.drag-tile.wrong { border-color: var(--color-error); }
+.drag-tile.disabled { pointer-events: none; }
+.drop-slot.disabled, .match-drop-slot.disabled { pointer-events: none; }
+.drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 100;
+  transform: translate(-50%, -50%);
+  opacity: .95;
+}
+
+/* ===== Match-pairs ===== */
+.match-defs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.match-def-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+.match-def-text {
+  flex: 1;
+  font-size: .98rem;
+  font-weight: 600;
+  text-align: right;
+}
+.match-drop-slot {
+  min-width: 110px;
+  min-height: 44px;
+  border: 3px dashed var(--color-secondary);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: .9rem;
+  color: var(--color-secondary);
+  flex-shrink: 0;
+  padding: 4px 8px;
+  transition: border-color .15s ease, background .15s ease;
+}
+.match-drop-slot.drag-over { border-color: var(--color-accent); }
+.match-drop-slot.filled { border-style: solid; color: var(--color-text); background: var(--color-bg-alt); }
+.match-drop-slot.correct { border-color: var(--color-success); color: var(--color-success); }
+.match-drop-slot.wrong { border-color: var(--color-error); background: color-mix(in srgb, var(--color-error) 10%, var(--color-bg-alt)); color: var(--color-text); }
+.match-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding-top: 10px;
+  border-top: 2px dashed var(--color-secondary);
+}
+
+.reveal-answer {
+  display: block;
+  margin-top: 6px;
+  font-weight: 800;
+  color: var(--color-primary);
 }

@@ -10,11 +10,33 @@ body[data-theme="pop-star"] {
   --color-success: #22c55e;
   --color-error: #ef4444;
   --shadow-card: 0 10px 30px rgba(255, 46, 136, .25);
+  position: relative;
   background:
     radial-gradient(circle at 15% 10%, rgba(255,46,136,.35), transparent 40%),
     radial-gradient(circle at 85% 25%, rgba(108,92,231,.35), transparent 45%),
+    radial-gradient(circle at 50% 95%, rgba(255,217,61,.2), transparent 40%),
     var(--color-bg);
   min-height: 100vh;
+}
+body[data-theme="pop-star"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(255, 217, 61, .12) 0,
+    rgba(255, 217, 61, .12) 3px,
+    transparent 3px,
+    transparent 46px
+  );
+  background-size: 140% 140%;
+  animation: pop-drift 16s linear infinite alternate;
+}
+@keyframes pop-drift {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 60%; }
 }
 body[data-theme="pop-star"] .title,
 body[data-theme="pop-star"] .subtitle,

@@ -30,6 +30,17 @@ export function createProvider(topicConfig) {
         explanation: entry.explanation,
       };
     }
+    if (entry.type === 'match-pairs') {
+      return {
+        id: entry.id,
+        type: 'match-pairs',
+        prompt: entry.prompt,
+        terms: shuffle(entry.pairs.map((p) => ({ id: p.id, label: p.term }))),
+        slots: shuffle(entry.pairs.map((p) => ({ id: p.id, label: p.definition }))),
+        pairs: entry.pairs.map((p) => ({ id: p.id })),
+        explanation: entry.explanation,
+      };
+    }
     return {
       id: entry.id,
       type: 'fill-in',

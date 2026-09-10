@@ -10,12 +10,35 @@ body[data-theme="space-academy"] {
   --color-success: #22c55e;
   --color-error: #ef4444;
   --shadow-card: 0 10px 30px rgba(34, 211, 238, .25);
+  position: relative;
   background:
     radial-gradient(circle at 20% 15%, rgba(34,211,238,.3), transparent 40%),
     radial-gradient(circle at 80% 30%, rgba(167,139,250,.3), transparent 45%),
     radial-gradient(circle at 50% 90%, rgba(34,211,238,.15), transparent 40%),
     var(--color-bg);
   min-height: 100vh;
+}
+body[data-theme="space-academy"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .8;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 22%, #fff 60%, transparent),
+    radial-gradient(1.2px 1.2px at 70% 58%, #fff 60%, transparent),
+    radial-gradient(1.8px 1.8px at 40% 78%, #fff 60%, transparent),
+    radial-gradient(1.2px 1.2px at 85% 15%, #fff 60%, transparent),
+    radial-gradient(1.4px 1.4px at 25% 45%, #fff 60%, transparent),
+    radial-gradient(1.6px 1.6px at 55% 12%, #fff 60%, transparent),
+    radial-gradient(1.2px 1.2px at 92% 68%, #fff 60%, transparent),
+    radial-gradient(1.4px 1.4px at 8% 85%, #fff 60%, transparent);
+  animation: star-twinkle 3.5s ease-in-out infinite alternate;
+}
+@keyframes star-twinkle {
+  from { opacity: .45; }
+  to { opacity: .95; }
 }
 body[data-theme="space-academy"] .title,
 body[data-theme="space-academy"] .subtitle,

@@ -54,3 +54,55 @@ export function clearTheme() {
     document.body.style.removeProperty(cssVar);
   }
 }
+
+// Pointer Events give one unified drag implementation across mouse, touch
+// and pen — native HTML5 drag-and-drop doesn't fire reliably on touch
+// devices, which is what these kids actually play on.
+function hitTestTargets(dropTargets, x, y) {
+  return dropTargets.find(({ el }) => {
+    const r = el.getBoundingClientRect();
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  });
+}
+
+export function makeDraggable(tileEl, getDropTargets, onDrop) {
+  tileEl.addEventListener('pointerdown', (e) => {
+    if (tileEl.classList.contains('placed')) return;
+    e.preventDefault();
+    const dropTargets = getDropTargets();
+    const rect = tileEl.getBoundingClientRect();
+    const ghost = tileEl.cloneNode(true);
+    ghost.classList.add('drag-ghost');
+    ghost.style.width = `${rect.width}px`;
+    document.body.appendChild(ghost);
+    tileEl.classList.add('dragging');
+
+    const moveGhost = (x, y) => {
+      ghost.style.left = `${x}px`;
+      ghost.style.top = `${y}px`;
+    };
+    moveGhost(e.clientX, e.clientY);
+
+    let lastTarget = null;
+    const onMove = (ev) => {
+      moveGhost(ev.clientX, ev.clientY);
+      const hit = hitTestTargets(dropTargets, ev.clientX, ev.clientY);
+      if (hit !== lastTarget) {
+        if (lastTarget) lastTarget.el.classList.remove('drag-over');
+        if (hit) hit.el.classList.add('drag-over');
+        lastTarget = hit;
+      }
+    };
+    const onUp = (ev) => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      ghost.remove();
+      tileEl.classList.remove('dragging');
+      dropTargets.forEach((t) => t.el.classList.remove('drag-over'));
+      const hit = hitTestTargets(dropTargets, ev.clientX, ev.clientY);
+      if (hit) onDrop(hit.id);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+}
