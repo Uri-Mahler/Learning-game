@@ -84,7 +84,9 @@ export function makeDraggable(tileEl, getDropTargets, onDrop) {
     moveGhost(e.clientX, e.clientY);
 
     let lastTarget = null;
+    let moved = false;
     const onMove = (ev) => {
+      if (Math.hypot(ev.clientX - e.clientX, ev.clientY - e.clientY) > 6) moved = true;
       moveGhost(ev.clientX, ev.clientY);
       const hit = hitTestTargets(dropTargets, ev.clientX, ev.clientY);
       if (hit !== lastTarget) {
@@ -99,6 +101,12 @@ export function makeDraggable(tileEl, getDropTargets, onDrop) {
       ghost.remove();
       tileEl.classList.remove('dragging');
       dropTargets.forEach((t) => t.el.classList.remove('drag-over'));
+      // A stationary tap (no real movement) is left to the native 'click'
+      // event instead: acting on it here — even a same-position drop —
+      // mutates the DOM inside the pointerup handler, which in some
+      // browsers silently swallows the click event that would otherwise
+      // follow, breaking every tap-to-place fallback on the element.
+      if (!moved) return;
       const hit = hitTestTargets(dropTargets, ev.clientX, ev.clientY);
       if (hit) onDrop(hit.id);
     };

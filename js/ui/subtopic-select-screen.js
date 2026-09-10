@@ -1,5 +1,6 @@
 import { h, mount, applyThemeColors } from './components.js';
 import { loadTopicConfig, loadThemeConfig } from '../config-loader.js';
+import * as state from '../state.js';
 
 export async function renderSubtopicSelectScreen(root, { player, quest, onSubtopicChosen, onBack }) {
   const screen = h('div', { class: 'screen' }, [h('div', { class: 'empty-state' }, 'טוען...')]);
@@ -21,16 +22,25 @@ export async function renderSubtopicSelectScreen(root, { player, quest, onSubtop
     ]
   );
 
-  const subtopicCards = (topicConfig.subtopics || []).map((s) =>
-    h(
+  const subtopicCards = (topicConfig.subtopics || []).map((s) => {
+    const prog = state.getSubtopicProgress(player.id, quest.id, s.id);
+    const done = prog.questionsAnswered >= state.SUBTOPIC_QUESTION_CAP;
+    const pct = Math.round((prog.questionsAnswered / state.SUBTOPIC_QUESTION_CAP) * 100);
+    return h(
       'div',
       { class: 'card card--selectable', onclick: () => onSubtopicChosen(s.id) },
       [
         h('div', { class: 'card__emoji' }, s.icon || '📚'),
         h('div', { class: 'card__title' }, s.name),
+        h(
+          'div',
+          { class: 'card__meta' },
+          done ? '✅ הושלם!' : `${prog.questionsAnswered}/${state.SUBTOPIC_QUESTION_CAP}`
+        ),
+        h('div', { class: 'progress-track' }, [h('div', { class: 'progress-fill', style: `width:${pct}%` })]),
       ]
-    )
-  );
+    );
+  });
 
   const layout = h('div', { class: 'screen' }, [
     h('div', { class: 'top-bar' }, [

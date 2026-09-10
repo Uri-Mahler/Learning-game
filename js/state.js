@@ -4,6 +4,10 @@ const PLAYERS_KEY = 'ltg:players';
 const ACTIVE_PLAYER_KEY = 'ltg:activePlayer';
 const RECENT_HISTORY_LENGTH = 6;
 
+// A subtopic is "mastered" (100%) once this many questions have been
+// answered while practicing it specifically (not during mixed practice).
+export const SUBTOPIC_QUESTION_CAP = 150;
+
 function readJSON(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -85,4 +89,21 @@ export function saveProgress(playerId, questId, progress) {
 export function pushRecentQuestionId(progress, id) {
   const list = [id, ...progress.recentQuestionIds].slice(0, RECENT_HISTORY_LENGTH);
   return { ...progress, recentQuestionIds: list };
+}
+
+function subtopicKey(playerId, questId, subtopicId) {
+  return `ltg:subtopic:${playerId}:${questId}:${subtopicId}`;
+}
+
+export function getSubtopicProgress(playerId, questId, subtopicId) {
+  return readJSON(subtopicKey(playerId, questId, subtopicId), { questionsAnswered: 0 });
+}
+
+export function incrementSubtopicProgress(playerId, questId, subtopicId) {
+  const progress = getSubtopicProgress(playerId, questId, subtopicId);
+  if (progress.questionsAnswered < SUBTOPIC_QUESTION_CAP) {
+    progress.questionsAnswered += 1;
+    writeJSON(subtopicKey(playerId, questId, subtopicId), progress);
+  }
+  return progress;
 }

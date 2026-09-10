@@ -183,8 +183,11 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
   }
 
   // ===== Match pairs: drag terms onto matching definitions =====
+  // Term chips are actually moved (not hidden+duplicated) so a placed chip
+  // stays the same draggable/tappable element and can be relocated to a
+  // different slot, or back to the bank, any time before all pairs are set.
   function renderMatchPairs(question) {
-    const placements = {};
+    const placements = {}; // slotId -> termId
     const slotEls = {};
     const termEls = {};
     const dropTargets = [];
@@ -195,13 +198,34 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
       selectedTermId = null;
     }
 
-    function placeTerm(termId, slotId) {
-      if (answered || placements[slotId] || termEls[termId].classList.contains('placed')) return;
-      placements[slotId] = termId;
-      const term = question.terms.find((t) => t.id === termId);
-      slotEls[slotId].textContent = term.label;
-      slotEls[slotId].classList.add('filled');
-      termEls[termId].classList.add('placed');
+    function currentSlotOf(termId) {
+      return Object.keys(placements).find((sid) => placements[sid] === termId) || null;
+    }
+
+    function moveTerm(termId, destination) {
+      if (answered) return;
+      const chip = termEls[termId];
+      const prevSlot = currentSlotOf(termId);
+      if (prevSlot) {
+        delete placements[prevSlot];
+        slotEls[prevSlot].classList.remove('filled');
+        slotEls[prevSlot].textContent = 'גררו מונח לכאן';
+      }
+
+      if (destination === 'bank') {
+        bank.appendChild(chip);
+      } else {
+        const occupantId = placements[destination];
+        if (occupantId && occupantId !== termId) {
+          delete placements[destination];
+          bank.appendChild(termEls[occupantId]);
+        }
+        placements[destination] = termId;
+        slotEls[destination].classList.add('filled');
+        slotEls[destination].textContent = '';
+        slotEls[destination].appendChild(chip);
+      }
+
       clearSelection();
       if (Object.keys(placements).length === question.pairs.length) {
         checkMatchPairs();
@@ -214,13 +238,7 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
       if (!allCorrect && !retryUsed) {
         retryUsed = true;
         question.pairs.forEach((pair) => {
-          if (placements[pair.id] !== pair.id) {
-            const wrongTermId = placements[pair.id];
-            delete placements[pair.id];
-            slotEls[pair.id].textContent = 'גררו מונח לכאן';
-            slotEls[pair.id].classList.remove('filled');
-            termEls[wrongTermId].classList.remove('placed');
-          }
+          if (placements[pair.id] !== pair.id) moveTerm(placements[pair.id], 'bank');
         });
         showHint();
         return;
@@ -249,7 +267,12 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
     question.slots.forEach((slot) => {
       const dropEl = h('div', { class: 'match-drop-slot' }, 'גררו מונח לכאן');
       dropEl.addEventListener('click', () => {
-        if (selectedTermId) placeTerm(selectedTermId, slot.id);
+        if (answered) return;
+        if (selectedTermId) {
+          moveTerm(selectedTermId, slot.id);
+        } else if (placements[slot.id]) {
+          moveTerm(placements[slot.id], 'bank');
+        }
       });
       slotEls[slot.id] = dropEl;
       dropTargets.push({ el: dropEl, id: slot.id });
@@ -260,9 +283,14 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
     question.terms.forEach((term) => {
       const chip = h('div', { class: 'drag-tile' }, term.label);
       termEls[term.id] = chip;
-      makeDraggable(chip, () => dropTargets, (slotId) => placeTerm(term.id, slotId));
+      makeDraggable(chip, () => [...dropTargets, { el: bank, id: 'bank' }], (dest) => moveTerm(term.id, dest));
       chip.addEventListener('click', () => {
-        if (answered || chip.classList.contains('placed')) return;
+        if (answered) return;
+        if (currentSlotOf(term.id)) {
+          // tapping a chip that's already placed takes the answer back
+          moveTerm(term.id, 'bank');
+          return;
+        }
         if (selectedTermId === term.id) {
           clearSelection();
           return;
@@ -556,6 +584,7 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
   }
 
   function appendFeedbackAndContinue(result) {
+    if (subtopicId) state.incrementSubtopicProgress(player.id, quest.id, subtopicId);
     feedbackArea.innerHTML = '';
     const feedback = h('div', { class: `feedback feedback--${result.correct ? 'correct' : 'wrong'}` }, [
       result.correct ? pick(vocab.correct) : pick(vocab.wrong),
