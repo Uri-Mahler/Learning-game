@@ -1,0 +1,16 @@
+[
+  {
+    "id": "quest-pop-multiplication",
+    "name": "מצעד הכפל",
+    "description": "תרגלו כפל וחילוק ועלו במצעד הפזמונים!",
+    "topicId": "multiplication-4th-grade",
+    "themeId": "pop-star"
+  },
+  {
+    "id": "quest-space-biotech",
+    "name": "משימת הביוטק הגלקטית",
+    "description": "התאמנו במונחי ביוטכנולוגיה ועלו בדרגות באקדמיית החלל!",
+    "topicId": "biotech-7th-grade",
+    "themeId": "space-academy"
+  }
+]

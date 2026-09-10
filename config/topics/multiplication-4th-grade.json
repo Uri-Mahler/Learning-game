@@ -1,0 +1,57 @@
+{
+  "id": "multiplication-4th-grade",
+  "name": "כפל וחילוק - כיתה ד'",
+  "description": "תרגול כפל וחילוק, כולל בעיות מילוליות ובעיות \"פי כמה\", בהתאם להיקף הנושאים הנלמדים בספרי שבילים פלוס 8-10 לכיתה ד'.",
+  "grade": 4,
+  "subject": "math",
+  "providerModule": "multiplication-4th-grade.js",
+  "pointsPerLevel": 100,
+  "tierCount": 5,
+  "levels": [
+    {
+      "maxFactor": 5,
+      "includeDivision": false,
+      "includeComparative": false,
+      "includeWordProblems": false,
+      "includeMultiples10": false,
+      "includeTwoStep": false,
+      "includeRemainder": false
+    },
+    {
+      "maxFactor": 10,
+      "includeDivision": false,
+      "includeComparative": true,
+      "includeWordProblems": true,
+      "includeMultiples10": false,
+      "includeTwoStep": false,
+      "includeRemainder": false
+    },
+    {
+      "maxFactor": 10,
+      "includeDivision": true,
+      "includeComparative": true,
+      "includeWordProblems": true,
+      "includeMultiples10": false,
+      "includeTwoStep": true,
+      "includeRemainder": false
+    },
+    {
+      "maxFactor": 12,
+      "includeDivision": true,
+      "includeComparative": true,
+      "includeWordProblems": true,
+      "includeMultiples10": true,
+      "includeTwoStep": true,
+      "includeRemainder": true
+    },
+    {
+      "maxFactor": 12,
+      "includeDivision": true,
+      "includeComparative": true,
+      "includeWordProblems": true,
+      "includeMultiples10": true,
+      "includeTwoStep": true,
+      "includeRemainder": true
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+/* ===== Pop-Star theme: music chart / talent-show vibe ===== */
+body[data-theme="pop-star"] {
+  --color-bg: #241436;
+  --color-bg-alt: #ffffff;
+  --color-primary: #ff2e88;
+  --color-secondary: #b79bd6;
+  --color-accent: #ffd93d;
+  --color-text: #23233a;
+  --color-text-on-primary: #ffffff;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --shadow-card: 0 10px 30px rgba(255, 46, 136, .25);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(255,46,136,.35), transparent 40%),
+    radial-gradient(circle at 85% 25%, rgba(108,92,231,.35), transparent 45%),
+    var(--color-bg);
+  min-height: 100vh;
+}
+body[data-theme="pop-star"] .title,
+body[data-theme="pop-star"] .subtitle,
+body[data-theme="pop-star"] .top-bar__player {
+  color: #ffffff;
+}

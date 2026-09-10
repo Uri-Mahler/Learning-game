@@ -1,0 +1,24 @@
+/* ===== Space Academy theme: epic space-adventure / Jedi-style training vibe ===== */
+body[data-theme="space-academy"] {
+  --color-bg: #0b1026;
+  --color-bg-alt: #ffffff;
+  --color-primary: #22d3ee;
+  --color-secondary: #8fa3c9;
+  --color-accent: #a78bfa;
+  --color-text: #16213e;
+  --color-text-on-primary: #0b1026;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --shadow-card: 0 10px 30px rgba(34, 211, 238, .25);
+  background:
+    radial-gradient(circle at 20% 15%, rgba(34,211,238,.3), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(167,139,250,.3), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(34,211,238,.15), transparent 40%),
+    var(--color-bg);
+  min-height: 100vh;
+}
+body[data-theme="space-academy"] .title,
+body[data-theme="space-academy"] .subtitle,
+body[data-theme="space-academy"] .top-bar__player {
+  color: #ffffff;
+}
