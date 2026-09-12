@@ -1,7 +1,31 @@
-import { h, mount, applyThemeColors, makeDraggable } from './components.js';
+import { h, mount, applyThemeColors } from './components.js';
 import * as state from '../state.js';
 import { loadQuestBundle } from '../config-loader.js';
 import { getNextQuestion, applyAnswer, checkAnswer, displayLevelIndex, levelProgressRatio } from '../game-engine.js';
+import { render as renderMultipleChoice } from './question-types/multiple-choice.js';
+import { render as renderFillIn } from './question-types/fill-in.js';
+import { render as renderMatchPairs } from './question-types/match-pairs.js';
+import { render as renderArrayBuilder } from './question-types/array-builder.js';
+import { render as renderFairShare } from './question-types/fair-share.js';
+import { render as renderFractionBuild } from './question-types/fraction-build.js';
+import { render as renderFractionEquivalent } from './question-types/fraction-equivalent.js';
+import { render as renderFractionMultiply } from './question-types/fraction-multiply.js';
+
+// Every question type is a module in ./question-types/ exporting
+// render(container, question, { attemptAnswer, isAnswered }). A type only
+// needs to gather user input and call attemptAnswer with it — it never
+// touches scoring, persistence, or the retry/reveal flow directly. Add a
+// new question kind by adding one file here and one line to this map.
+const RENDERERS = {
+  'multiple-choice': renderMultipleChoice,
+  'fill-in': renderFillIn,
+  'match-pairs': renderMatchPairs,
+  'array-builder': renderArrayBuilder,
+  'fair-share': renderFairShare,
+  'fraction-build': renderFractionBuild,
+  'fraction-equivalent': renderFractionEquivalent,
+  'fraction-multiply': renderFractionMultiply,
+};
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -72,25 +96,17 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
       h('div', { class: 'question-card__prompt', dir: currentQuestion.dir || null }, currentQuestion.prompt)
     );
 
-    const renderers = {
-      'multiple-choice': renderDragChoice,
-      'fill-in': renderFillIn,
-      'match-pairs': renderMatchPairs,
-      'array-builder': renderArrayBuilder,
-      'fair-share': renderFairShare,
-      'fraction-build': renderFractionBuild,
-      'fraction-equivalent': renderFractionEquivalent,
-      'fraction-multiply': renderFractionMultiply,
-    };
-    renderers[currentQuestion.type](currentQuestion);
+    RENDERERS[currentQuestion.type](questionArea, currentQuestion, { attemptAnswer, isAnswered: () => answered });
 
     feedbackArea = h('div', { class: 'feedback-area' });
     questionArea.appendChild(feedbackArea);
   }
 
-  // Shared core for any question type that resolves via a single discrete
-  // submission: peeks correctness without committing, gives one hint-only
-  // retry on the first miss, and only scores/reveals on the final attempt.
+  // Shared core for every question type: peeks correctness without
+  // committing, gives one hint-only retry on the first miss, and only
+  // scores/reveals on the final attempt. This is the single place that
+  // touches progress/scoring - question-type modules never call
+  // applyAnswer or state.saveProgress themselves.
   function attemptAnswer(userInput, { onRetryVisual, onFinalVisual } = {}) {
     if (answered) return;
     const correct = checkAnswer(currentQuestion, userInput);
@@ -119,468 +135,6 @@ export async function renderGameScreen(root, { player, quest, subtopicId, onExit
         currentQuestion.explanation ? h('span', { class: 'feedback__explain' }, currentQuestion.explanation) : null,
       ])
     );
-  }
-
-  // ===== Multiple choice: drag tile into slot =====
-  function renderDragChoice(question) {
-    const slot = h('div', { class: 'drop-slot' }, 'גררו את התשובה לכאן');
-    const tileRefs = [];
-    const row = h('div', { class: 'drag-row' });
-
-    question.choices.forEach((choice) => {
-      const tile = h('div', { class: 'drag-tile' }, choice.label);
-      tileRefs.push({ el: tile, choice });
-      const place = () => {
-        if (answered) return;
-        attemptAnswer(choice.value, {
-          onRetryVisual: () => {
-            tile.classList.add('wrong', 'disabled');
-            slot.textContent = 'גררו את התשובה לכאן';
-          },
-          onFinalVisual: (result) => {
-            slot.textContent = choice.label;
-            slot.classList.add('filled', result.correct ? 'correct' : 'wrong');
-            tile.classList.add('placed');
-            tileRefs.forEach((t) => t.el.classList.add('disabled'));
-            if (!result.correct) {
-              const correctTile = tileRefs.find((t) => t.choice.value === question.answer);
-              if (correctTile) correctTile.el.classList.add('correct');
-            }
-          },
-        });
-      };
-      makeDraggable(tile, () => [{ el: slot, id: 'slot' }], place);
-      tile.addEventListener('click', place);
-      row.appendChild(tile);
-    });
-
-    questionArea.appendChild(slot);
-    questionArea.appendChild(row);
-  }
-
-  // ===== Fill-in numeric/text answer =====
-  function renderFillIn(question) {
-    const input = h('input', { class: 'text-input', type: 'text', inputmode: 'numeric', placeholder: '?' });
-    const submit = h('button', { class: 'btn btn--accent', type: 'button' }, 'בדוק');
-    const submitAnswer = () => {
-      attemptAnswer(input.value, {
-        onRetryVisual: () => {
-          input.value = '';
-          input.focus();
-        },
-        onFinalVisual: () => {
-          input.disabled = true;
-          submit.disabled = true;
-        },
-      });
-    };
-    submit.addEventListener('click', submitAnswer);
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submitAnswer();
-    });
-    questionArea.appendChild(h('div', { class: 'fill-row' }, [input, submit]));
-    setTimeout(() => input.focus(), 50);
-  }
-
-  // ===== Match pairs: drag terms onto matching definitions =====
-  // Term chips are actually moved (not hidden+duplicated) so a placed chip
-  // stays the same draggable/tappable element and can be relocated to a
-  // different slot, or back to the bank, any time before all pairs are set.
-  function renderMatchPairs(question) {
-    const placements = {}; // slotId -> termId
-    const slotEls = {};
-    const termEls = {};
-    const dropTargets = [];
-    let selectedTermId = null;
-
-    function clearSelection() {
-      if (selectedTermId && termEls[selectedTermId]) termEls[selectedTermId].classList.remove('selected');
-      selectedTermId = null;
-    }
-
-    function currentSlotOf(termId) {
-      return Object.keys(placements).find((sid) => placements[sid] === termId) || null;
-    }
-
-    function moveTerm(termId, destination) {
-      if (answered) return;
-      const chip = termEls[termId];
-      const prevSlot = currentSlotOf(termId);
-      if (prevSlot) {
-        delete placements[prevSlot];
-        slotEls[prevSlot].classList.remove('filled');
-        slotEls[prevSlot].textContent = 'גררו מונח לכאן';
-      }
-
-      if (destination === 'bank') {
-        bank.appendChild(chip);
-      } else {
-        const occupantId = placements[destination];
-        if (occupantId && occupantId !== termId) {
-          delete placements[destination];
-          bank.appendChild(termEls[occupantId]);
-        }
-        placements[destination] = termId;
-        slotEls[destination].classList.add('filled');
-        slotEls[destination].textContent = '';
-        slotEls[destination].appendChild(chip);
-      }
-
-      clearSelection();
-      if (Object.keys(placements).length === question.pairs.length) {
-        checkMatchPairs();
-      }
-    }
-
-    function checkMatchPairs() {
-      const allCorrect = question.pairs.every((pair) => placements[pair.id] === pair.id);
-
-      if (!allCorrect && !retryUsed) {
-        retryUsed = true;
-        question.pairs.forEach((pair) => {
-          if (placements[pair.id] !== pair.id) moveTerm(placements[pair.id], 'bank');
-        });
-        showHint();
-        return;
-      }
-
-      answered = true;
-      const result = applyAnswer(progress, topicConfig, themeConfig, question, placements);
-      progress = result.progress;
-      state.saveProgress(player.id, quest.id, progress);
-      updateHud();
-
-      question.pairs.forEach((pair) => {
-        const isRight = placements[pair.id] === pair.id;
-        slotEls[pair.id].classList.add(isRight ? 'correct' : 'wrong');
-        if (!isRight) {
-          const correctTerm = question.terms.find((t) => t.id === pair.id);
-          slotEls[pair.id].textContent = correctTerm.label;
-        }
-      });
-      Object.values(termEls).forEach((el) => el.classList.add('disabled'));
-
-      appendFeedbackAndContinue(result);
-    }
-
-    const defsWrap = h('div', { class: 'match-defs' });
-    question.slots.forEach((slot) => {
-      const dropEl = h('div', { class: 'match-drop-slot' }, 'גררו מונח לכאן');
-      dropEl.addEventListener('click', () => {
-        if (answered) return;
-        if (selectedTermId) {
-          moveTerm(selectedTermId, slot.id);
-        } else if (placements[slot.id]) {
-          moveTerm(placements[slot.id], 'bank');
-        }
-      });
-      slotEls[slot.id] = dropEl;
-      dropTargets.push({ el: dropEl, id: slot.id });
-      defsWrap.appendChild(h('div', { class: 'match-def-row' }, [h('div', { class: 'match-def-text' }, slot.label), dropEl]));
-    });
-
-    const bank = h('div', { class: 'match-bank' });
-    question.terms.forEach((term) => {
-      const chip = h('div', { class: 'drag-tile' }, term.label);
-      termEls[term.id] = chip;
-      makeDraggable(chip, () => [...dropTargets, { el: bank, id: 'bank' }], (dest) => moveTerm(term.id, dest));
-      chip.addEventListener('click', () => {
-        if (answered) return;
-        if (currentSlotOf(term.id)) {
-          // tapping a chip that's already placed takes the answer back
-          moveTerm(term.id, 'bank');
-          return;
-        }
-        if (selectedTermId === term.id) {
-          clearSelection();
-          return;
-        }
-        clearSelection();
-        selectedTermId = term.id;
-        chip.classList.add('selected');
-      });
-      bank.appendChild(chip);
-    });
-
-    questionArea.appendChild(defsWrap);
-    questionArea.appendChild(bank);
-  }
-
-  // ===== Array builder: drag sliders to size a rows x cols array =====
-  function renderArrayBuilder(question) {
-    let rows = 1;
-    let cols = 1;
-    const rowsLabel = h('span', {}, `שורות: ${rows}`);
-    const colsLabel = h('span', {}, `טורים: ${cols}`);
-    const grid = h('div', { class: 'array-grid' });
-    const total = h('div', { class: 'array-total', dir: 'ltr' }, '');
-
-    function redraw() {
-      rowsLabel.textContent = `שורות: ${rows}`;
-      colsLabel.textContent = `טורים: ${cols}`;
-      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      grid.innerHTML = '';
-      for (let i = 0; i < rows * cols; i++) grid.appendChild(h('div', { class: 'array-cell' }));
-      total.textContent = `${rows} × ${cols} = ${rows * cols}`;
-    }
-
-    const rowsSlider = h('input', { type: 'range', min: '1', max: String(question.maxSlider), value: '1', class: 'array-slider' });
-    rowsSlider.addEventListener('input', () => {
-      rows = Number(rowsSlider.value);
-      redraw();
-    });
-    const colsSlider = h('input', { type: 'range', min: '1', max: String(question.maxSlider), value: '1', class: 'array-slider' });
-    colsSlider.addEventListener('input', () => {
-      cols = Number(colsSlider.value);
-      redraw();
-    });
-    redraw();
-
-    const checkBtn = h('button', { class: 'btn btn--accent', type: 'button' }, 'בדוק');
-    checkBtn.addEventListener('click', () => {
-      attemptAnswer(
-        { rows, cols },
-        {
-          onFinalVisual: (result) => {
-            checkBtn.disabled = true;
-            rowsSlider.disabled = true;
-            colsSlider.disabled = true;
-            if (!result.correct) {
-              rows = question.targetRows;
-              cols = question.targetCols;
-              rowsSlider.value = String(rows);
-              colsSlider.value = String(cols);
-              redraw();
-            }
-          },
-        }
-      );
-    });
-
-    questionArea.appendChild(
-      h('div', { class: 'array-builder' }, [
-        h('div', { class: 'array-controls' }, [
-          h('label', {}, [rowsLabel, rowsSlider]),
-          h('label', {}, [colsLabel, colsSlider]),
-        ]),
-        grid,
-        total,
-        checkBtn,
-      ])
-    );
-  }
-
-  // ===== Fair share: drag tokens equally into buckets =====
-  function renderFairShare(question) {
-    const bucketCounts = new Array(question.divisor).fill(0);
-    const bucketEls = [];
-    const dropTargets = [];
-    const bucketsRow = h('div', { class: 'fairshare-buckets' });
-    for (let i = 0; i < question.divisor; i++) {
-      const bucketEl = h('div', { class: 'fairshare-bucket' });
-      bucketEls.push(bucketEl);
-      dropTargets.push({ el: bucketEl, id: i });
-      bucketsRow.appendChild(bucketEl);
-    }
-
-    const bank = h('div', { class: 'fairshare-bank' });
-    const tokens = [];
-
-    function placeToken(rec, bucketIndex) {
-      if (answered) return;
-      if (rec.bucketIndex !== null) bucketCounts[rec.bucketIndex]--;
-      rec.bucketIndex = bucketIndex;
-      bucketCounts[bucketIndex]++;
-      bucketEls[bucketIndex].appendChild(rec.el);
-      if (tokens.every((t) => t.bucketIndex !== null)) checkFairShare();
-    }
-
-    for (let i = 0; i < question.dividend; i++) {
-      const token = h('div', { class: 'fairshare-token' }, '🔵');
-      const rec = { el: token, bucketIndex: null };
-      tokens.push(rec);
-      makeDraggable(token, () => dropTargets, (bucketIndex) => placeToken(rec, bucketIndex));
-      token.addEventListener('click', () => {
-        if (answered) return;
-        const target = bucketCounts.indexOf(Math.min(...bucketCounts));
-        placeToken(rec, target);
-      });
-      bank.appendChild(token);
-    }
-
-    function checkFairShare() {
-      const allEqual = bucketCounts.every((c) => c === question.answer);
-
-      if (!allEqual && !retryUsed) {
-        retryUsed = true;
-        tokens.forEach((t) => {
-          t.bucketIndex = null;
-          bank.appendChild(t.el);
-        });
-        bucketCounts.fill(0);
-        showHint();
-        return;
-      }
-
-      answered = true;
-      const result = applyAnswer(progress, topicConfig, themeConfig, question, bucketCounts.slice());
-      progress = result.progress;
-      state.saveProgress(player.id, quest.id, progress);
-      updateHud();
-      bucketEls.forEach((el, i) => el.classList.add(bucketCounts[i] === question.answer ? 'correct' : 'wrong'));
-      appendFeedbackAndContinue(result);
-    }
-
-    questionArea.appendChild(bucketsRow);
-    questionArea.appendChild(bank);
-  }
-
-  // ===== Fraction build: tap slices to shade a fraction of a shape =====
-  function renderFractionBuild(question) {
-    let shadedCount = 0;
-    const slices = [];
-    const shape = h('div', { class: 'fraction-shape' });
-    const label = h('div', { class: 'fraction-label', dir: 'ltr' }, `צבעתם 0/${question.denominator}`);
-
-    for (let i = 0; i < question.denominator; i++) {
-      const slice = h('div', { class: 'fraction-slice' });
-      slice.addEventListener('click', () => {
-        if (answered) return;
-        slice.classList.toggle('shaded');
-        shadedCount = shape.querySelectorAll('.shaded').length;
-        label.textContent = `צבעתם ${shadedCount}/${question.denominator}`;
-      });
-      slices.push(slice);
-      shape.appendChild(slice);
-    }
-
-    const checkBtn = h('button', { class: 'btn btn--accent', type: 'button' }, 'בדוק');
-    checkBtn.addEventListener('click', () => {
-      attemptAnswer(shadedCount, {
-        onFinalVisual: (result) => {
-          checkBtn.disabled = true;
-          slices.forEach((s) => s.classList.add('locked'));
-          if (!result.correct) {
-            slices.forEach((s) => s.classList.remove('shaded'));
-            for (let i = 0; i < question.answer; i++) slices[i].classList.add('shaded');
-            label.textContent = `צבעתם ${question.answer}/${question.denominator}`;
-          }
-        },
-      });
-    });
-
-    questionArea.appendChild(h('div', { class: 'fraction-row' }, [shape, label, checkBtn]));
-  }
-
-  // ===== Fraction equivalent: match shaded area across two shapes =====
-  function renderFractionEquivalent(question) {
-    const shape1 = h('div', { class: 'fraction-shape' });
-    for (let i = 0; i < question.baseDenominator; i++) {
-      shape1.appendChild(h('div', { class: `fraction-slice locked${i < question.baseNumerator ? ' shaded' : ''}` }));
-    }
-    const label1 = h('div', { class: 'fraction-label', dir: 'ltr' }, `${question.baseNumerator}/${question.baseDenominator}`);
-
-    let shadedCount = 0;
-    const slices2 = [];
-    const shape2 = h('div', { class: 'fraction-shape' });
-    const label2 = h('div', { class: 'fraction-label', dir: 'ltr' }, `צבעתם 0/${question.targetDenominator}`);
-
-    for (let i = 0; i < question.targetDenominator; i++) {
-      const slice = h('div', { class: 'fraction-slice' });
-      slice.addEventListener('click', () => {
-        if (answered) return;
-        slice.classList.toggle('shaded');
-        shadedCount = shape2.querySelectorAll('.shaded').length;
-        label2.textContent = `צבעתם ${shadedCount}/${question.targetDenominator}`;
-      });
-      slices2.push(slice);
-      shape2.appendChild(slice);
-    }
-
-    const checkBtn = h('button', { class: 'btn btn--accent', type: 'button' }, 'בדוק');
-    checkBtn.addEventListener('click', () => {
-      attemptAnswer(shadedCount, {
-        onFinalVisual: (result) => {
-          checkBtn.disabled = true;
-          slices2.forEach((s) => s.classList.add('locked'));
-          if (!result.correct) {
-            slices2.forEach((s) => s.classList.remove('shaded'));
-            for (let i = 0; i < question.answer; i++) slices2[i].classList.add('shaded');
-            label2.textContent = `צבעתם ${question.answer}/${question.targetDenominator}`;
-          }
-        },
-      });
-    });
-
-    questionArea.appendChild(
-      h('div', { class: 'fraction-pair' }, [
-        h('div', { class: 'fraction-row' }, [shape1, label1]),
-        h('div', { class: 'fraction-row' }, [shape2, label2]),
-        checkBtn,
-      ])
-    );
-  }
-
-  // ===== Fraction multiply: shade rows (given) x columns (tap) = overlap =====
-  function renderFractionMultiply(question) {
-    const cellEls = [];
-    const colShaded = new Array(question.cols).fill(false);
-    let answerCount = 0;
-
-    const grid = h('div', { class: 'fracmul-grid' });
-    grid.style.gridTemplateColumns = `repeat(${question.cols}, 1fr)`;
-    for (let r = 0; r < question.rows; r++) {
-      cellEls[r] = [];
-      for (let c = 0; c < question.cols; c++) {
-        const cell = h('div', { class: `fracmul-cell${r < question.shadedRows ? ' row-shaded' : ''}` });
-        cellEls[r][c] = cell;
-        cell.addEventListener('click', () => {
-          if (answered) return;
-          toggleColumn(c);
-        });
-        grid.appendChild(cell);
-      }
-    }
-
-    const label = h('div', { class: 'fraction-label', dir: 'ltr' }, `החלק המשותף: 0/${question.rows * question.cols}`);
-
-    function toggleColumn(c) {
-      colShaded[c] = !colShaded[c];
-      for (let r = 0; r < question.rows; r++) {
-        cellEls[r][c].classList.toggle('col-shaded', colShaded[c]);
-        cellEls[r][c].classList.toggle('overlap', colShaded[c] && r < question.shadedRows);
-      }
-      answerCount = countOverlap();
-      label.textContent = `החלק המשותף: ${answerCount}/${question.rows * question.cols}`;
-    }
-
-    function countOverlap() {
-      let n = 0;
-      for (let r = 0; r < question.shadedRows; r++) {
-        for (let c = 0; c < question.cols; c++) {
-          if (colShaded[c]) n++;
-        }
-      }
-      return n;
-    }
-
-    const checkBtn = h('button', { class: 'btn btn--accent', type: 'button' }, 'בדוק');
-    checkBtn.addEventListener('click', () => {
-      attemptAnswer(answerCount, {
-        onFinalVisual: (result) => {
-          checkBtn.disabled = true;
-          if (!result.correct) {
-            for (let c = 0; c < question.cols; c++) colShaded[c] = false;
-            for (let r = 0; r < question.rows; r++) {
-              for (let c = 0; c < question.cols; c++) cellEls[r][c].classList.remove('col-shaded', 'overlap');
-            }
-            for (let c = 0; c < question.answerCols; c++) toggleColumn(c);
-          }
-        },
-      });
-    });
-
-    questionArea.appendChild(h('div', { class: 'fracmul-grid-wrap' }, [grid, label, checkBtn]));
   }
 
   function appendFeedbackAndContinue(result) {

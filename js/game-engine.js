@@ -63,28 +63,42 @@ export function checkAnswer(question, userInput) {
   return Number(userInput) === question.answer;
 }
 
-export function applyAnswer(progress, topicConfig, themeConfig, question, userInput) {
-  const correct = checkAnswer(question, userInput);
+// Adds points to progress and reports whether that crossed a level
+// threshold. This is the *only* place points get added to a player's
+// progress - anything that awards points (a normal answer, a boss-battle
+// win, a future bonus of any kind) should go through this, so there is
+// always exactly one rule for "what happens when points go up."
+export function applyBonusPoints(progress, topicConfig, themeConfig, bonusPoints) {
   const capped = maxLevelIndex(topicConfig, themeConfig);
   const prevLevel = Math.min(rawLevelIndex(progress, topicConfig), capped);
 
-  const pointsAwarded = correct ? BASE_POINTS + Math.min(progress.streak, STREAK_BONUS_CAP) * 2 : 0;
-
-  const recentQuestionIds = [question.id, ...(progress.recentQuestionIds || [])].slice(0, 6);
-
   const nextProgress = {
     ...progress,
-    points: progress.points + pointsAwarded,
+    points: progress.points + bonusPoints,
+    lastPlayedAt: Date.now(),
+  };
+
+  const newLevel = Math.min(rawLevelIndex(nextProgress, topicConfig), capped);
+  const leveledUp = newLevel > prevLevel;
+
+  return { leveledUp, progress: nextProgress };
+}
+
+export function applyAnswer(progress, topicConfig, themeConfig, question, userInput) {
+  const correct = checkAnswer(question, userInput);
+  const pointsAwarded = correct ? BASE_POINTS + Math.min(progress.streak, STREAK_BONUS_CAP) * 2 : 0;
+  const recentQuestionIds = [question.id, ...(progress.recentQuestionIds || [])].slice(0, 6);
+
+  const { leveledUp, progress: pointsApplied } = applyBonusPoints(progress, topicConfig, themeConfig, pointsAwarded);
+
+  const nextProgress = {
+    ...pointsApplied,
     streak: correct ? progress.streak + 1 : 0,
     bestStreak: correct ? Math.max(progress.bestStreak, progress.streak + 1) : progress.bestStreak,
     questionsAnswered: progress.questionsAnswered + 1,
     correctAnswers: progress.correctAnswers + (correct ? 1 : 0),
-    lastPlayedAt: Date.now(),
     recentQuestionIds,
   };
 
-  const newLevel = Math.min(rawLevelIndex(nextProgress, topicConfig), capped);
-  const leveledUp = correct && newLevel > prevLevel;
-
-  return { correct, pointsAwarded, leveledUp, progress: nextProgress };
+  return { correct, pointsAwarded, leveledUp: correct && leveledUp, progress: nextProgress };
 }

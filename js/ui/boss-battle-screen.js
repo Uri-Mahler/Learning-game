@@ -1,7 +1,7 @@
 import { h, mount, applyThemeColors } from './components.js';
 import * as state from '../state.js';
 import { loadQuestBundle } from '../config-loader.js';
-import { getNextQuestion, checkAnswer } from '../game-engine.js';
+import { getNextQuestion, checkAnswer, applyBonusPoints } from '../game-engine.js';
 
 // Boss battle is a separate, faster mode from regular practice: rapid
 // tap-to-answer rounds against a themed rival, with a health bar instead
@@ -141,13 +141,13 @@ export async function renderBossBattleScreen(root, { player, quest, onExit }) {
   }
 
   function victory() {
-    const p = state.getProgress(player.id, quest.id);
-    p.points += VICTORY_BONUS_POINTS;
-    state.saveProgress(player.id, quest.id, p);
+    const before = state.getProgress(player.id, quest.id);
+    const { progress: after, leveledUp } = applyBonusPoints(before, topicConfig, themeConfig, VICTORY_BONUS_POINTS);
+    state.saveProgress(player.id, quest.id, after);
     showEndOverlay({
       emoji: '🏆',
       title: `ניצחתם את ${boss.name}!`,
-      sub: `זכיתם ב-${VICTORY_BONUS_POINTS} נקודות בונוס!`,
+      sub: `זכיתם ב-${VICTORY_BONUS_POINTS} נקודות בונוס!${leveledUp ? ' ועליתם דרגה! 🎉' : ''}`,
     });
   }
 

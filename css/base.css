@@ -234,8 +234,12 @@ h1, h2, h3, p { margin: 0; }
   font-weight: 700;
   font-size: 1.05rem;
 }
-.feedback--correct { background: color-mix(in srgb, var(--color-success) 18%, transparent); color: var(--color-success); }
-.feedback--wrong { background: color-mix(in srgb, var(--color-error) 15%, transparent); color: var(--color-error); }
+/* Plain rgba() fallback first for browsers without color-mix() support
+   (e.g. Safari before 16.2) - success/error are fixed colors (never
+   themed), so an exact rgba equivalent is possible here. The color-mix()
+   line after it wins in browsers that support it. */
+.feedback--correct { background: rgba(34, 197, 94, .18); background: color-mix(in srgb, var(--color-success) 18%, transparent); color: var(--color-success); }
+.feedback--wrong { background: rgba(239, 68, 68, .15); background: color-mix(in srgb, var(--color-error) 15%, transparent); color: var(--color-error); }
 .feedback__explain { display: block; margin-top: 6px; font-weight: 500; font-size: .92rem; color: var(--color-text); }
 
 /* ===== Level-up overlay ===== */
@@ -308,10 +312,10 @@ h1, h2, h3, p { margin: 0; }
   color: var(--color-secondary);
   transition: border-color .15s ease, background .15s ease;
 }
-.drop-slot.drag-over { border-color: var(--color-accent); background: color-mix(in srgb, var(--color-accent) 15%, transparent); }
+.drop-slot.drag-over { border-color: var(--color-accent); background: rgba(255, 183, 3, .15); background: color-mix(in srgb, var(--color-accent) 15%, transparent); }
 .drop-slot.filled { border-style: solid; color: var(--color-text); }
-.drop-slot.correct { border-color: var(--color-success); background: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); }
-.drop-slot.wrong { border-color: var(--color-error); background: color-mix(in srgb, var(--color-error) 12%, transparent); color: var(--color-error); }
+.drop-slot.correct { border-color: var(--color-success); background: rgba(34, 197, 94, .15); background: color-mix(in srgb, var(--color-success) 15%, transparent); color: var(--color-success); }
+.drop-slot.wrong { border-color: var(--color-error); background: rgba(239, 68, 68, .12); background: color-mix(in srgb, var(--color-error) 12%, transparent); color: var(--color-error); }
 
 .drag-row {
   display: flex;
@@ -335,7 +339,7 @@ h1, h2, h3, p { margin: 0; }
 .drag-tile.selected { outline: 3px solid var(--color-accent); }
 .drag-tile.placed { visibility: hidden; }
 .drag-tile.dragging { opacity: .35; }
-.drag-tile.correct { border-color: var(--color-success); background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface)); }
+.drag-tile.correct { border-color: var(--color-success); background: #c5e7d8; background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface)); }
 .drag-tile.wrong { border-color: var(--color-error); }
 .drag-tile.disabled { pointer-events: none; }
 .drop-slot.disabled, .match-drop-slot.disabled { pointer-events: none; }
@@ -385,7 +389,7 @@ h1, h2, h3, p { margin: 0; }
 .match-drop-slot.drag-over { border-color: var(--color-accent); }
 .match-drop-slot.filled { border-style: solid; color: var(--color-text); background: var(--color-bg-alt); }
 .match-drop-slot.correct { border-color: var(--color-success); color: var(--color-success); }
-.match-drop-slot.wrong { border-color: var(--color-error); background: color-mix(in srgb, var(--color-error) 10%, var(--color-bg-alt)); color: var(--color-text); }
+.match-drop-slot.wrong { border-color: var(--color-error); background: #fdecec; background: color-mix(in srgb, var(--color-error) 10%, var(--color-bg-alt)); color: var(--color-text); }
 .match-bank {
   display: flex;
   flex-wrap: wrap;
@@ -554,8 +558,11 @@ h1, h2, h3, p { margin: 0; }
   border-radius: 3px;
   cursor: pointer;
 }
-.fracmul-cell.row-shaded { background: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface)); }
-.fracmul-cell.col-shaded { background: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface)); }
+/* These two mix a themed color, so the fallback can only approximate the
+   default palette (it'll be slightly off in space-academy/pop-star on a
+   browser without color-mix() support, but never invisible/unstyled). */
+.fracmul-cell.row-shaded { background: #bbc3ef; background: color-mix(in srgb, var(--color-primary) 35%, var(--color-surface)); }
+.fracmul-cell.col-shaded { background: #f7d170; background: color-mix(in srgb, var(--color-accent) 55%, var(--color-surface)); }
 .fracmul-cell.overlap { background: var(--color-primary); }
 
 /* ===== Boss battle ===== */
